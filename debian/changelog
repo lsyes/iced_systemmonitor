@@ -1,4 +1,4 @@
-iced-systemmonitor (2.0) noble; urgency=medium
+iced-systemmonitor (2.0.0-1) noble; urgency=medium
 
   * Rewrite source from cosmic-monitor to iced-systemmonitor.
 
