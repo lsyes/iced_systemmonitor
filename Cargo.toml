@@ -68,9 +68,9 @@ inherits = "release"
 debug = true
 
 [profile.release]
-opt-level = "3"        # 或 "s"，优先缩减体积
-lto = true             # 开启链接时优化（fat LTO）
-codegen-units = 1      # 减少代码生成单元，优化更彻底
+opt-level = 3
+lto = true
+codegen-units = 1
 
 # The vendored winit exposes the `xdg_surface` of a window so that a native
 # `xdg_popup` context menu can be parented to it.
