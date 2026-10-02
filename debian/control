@@ -10,6 +10,6 @@ Build-Depends:
 Standards-Version: 4.6.2
 
 Package: iced-systemmonitor
-Architecture: amd64 arm64
+Architecture: amd64 arm64 loong64
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Iced System Monitor

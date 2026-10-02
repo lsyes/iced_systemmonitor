@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-export DESTDIR = debian/iced-systemmonitor
+export DESTDIR = $(CURDIR)/debian/tmp
 export VENDOR ?= 1
 
 %:
