@@ -1,7 +1,7 @@
 Source: iced-systemmonitor
 Section: admin
 Priority: optional
-Maintainer: Iced System Monitor Maintainers <noreply@example.invalid>
+Maintainer: Junxi Zeng <3294271542@qq.com>
 Build-Depends:
     debhelper-compat (=13),
     just (>= 1.13.0),
