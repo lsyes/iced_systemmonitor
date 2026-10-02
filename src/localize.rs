@@ -69,6 +69,6 @@ pub fn localize() {
     let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
 
     if let Err(error) = localizer.select(&requested_languages) {
-        eprintln!("Error while loading language for cosmic-monitor {error}");
+        eprintln!("Error while loading language for iced_systemmonitor {error}");
     }
 }

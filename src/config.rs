@@ -1,47 +1,95 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use cosmic::{
-    cosmic_config::{self, CosmicConfigEntry, cosmic_config_derive::CosmicConfigEntry},
-    theme,
-};
+//! Application configuration, stored as JSON in the XDG config directory.
+
+use std::{fs, path::PathBuf};
+
 use serde::{Deserialize, Serialize};
 
-pub const CONFIG_VERSION: u64 = 1;
+/// The application identifier used for the desktop entry and config directory.
+pub const APP_ID: &str = "org.iced_systemmonitor.Monitor";
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+/// The config directory name.
+const CONFIG_DIR: &str = "iced_systemmonitor";
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum AppTheme {
     Dark,
+    #[default]
     Light,
     System,
 }
 
 impl AppTheme {
-    pub fn theme(&self) -> theme::Theme {
+    /// Returns the iced theme to use, or `None` to follow the system theme.
+    pub fn theme(self) -> Option<iced::Theme> {
         match self {
-            Self::Dark => {
-                let mut t = theme::system_dark();
-                t.theme_type.prefer_dark(Some(true));
-                t
-            }
-            Self::Light => {
-                let mut t = theme::system_light();
-                t.theme_type.prefer_dark(Some(false));
-                t
-            }
-            Self::System => theme::system_preference(),
+            Self::Light => Some(iced::Theme::Light),
+            Self::Dark => Some(iced::Theme::Dark),
+            Self::System => None,
         }
     }
 }
 
-#[derive(Clone, CosmicConfigEntry, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+#[serde(default)]
 pub struct Config {
     pub app_theme: AppTheme,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            app_theme: AppTheme::System,
+fn config_dir() -> Option<PathBuf> {
+    let base = std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .filter(|path| path.is_absolute())
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))?;
+
+    Some(base.join(CONFIG_DIR))
+}
+
+fn config_path() -> Option<PathBuf> {
+    Some(config_dir()?.join("config.json"))
+}
+
+impl Config {
+    /// Loads the configuration, falling back to the default on any error.
+    pub fn load() -> Self {
+        let Some(path) = config_path() else {
+            return Self::default();
+        };
+
+        let Ok(data) = fs::read(&path) else {
+            return Self::default();
+        };
+
+        match serde_json::from_slice(&data) {
+            Ok(config) => config,
+            Err(err) => {
+                log::warn!("failed to parse {}: {}", path.display(), err);
+                Self::default()
+            }
+        }
+    }
+
+    /// Saves the configuration, logging any error.
+    pub fn save(&self) {
+        let Some(path) = config_path() else {
+            return;
+        };
+
+        if let Some(dir) = path.parent()
+            && let Err(err) = fs::create_dir_all(dir)
+        {
+            log::warn!("failed to create {}: {}", dir.display(), err);
+            return;
+        }
+
+        match serde_json::to_vec_pretty(self) {
+            Ok(data) => {
+                if let Err(err) = fs::write(&path, data) {
+                    log::warn!("failed to write {}: {}", path.display(), err);
+                }
+            }
+            Err(err) => log::warn!("failed to serialize config: {}", err),
         }
     }
 }

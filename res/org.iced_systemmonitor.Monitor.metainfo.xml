@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<component type="desktop-application">
+  <id>org.iced_systemmonitor.Monitor</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <name>Iced System Monitor</name>
+  <summary>A system monitor built with iced</summary>
+  <description>
+    <p>A system monitor built with iced</p>
+  </description>
+  <keywords>
+    <keyword>Monitor</keyword>
+    <keyword>System</keyword>
+    <keyword>Process</keyword>
+    <keyword>CPU</keyword>
+    <keyword>Memory</keyword>
+    <keyword>Network</keyword>
+    <keyword>History</keyword>
+    <keyword>Usage</keyword>
+  </keywords>
+  <launchable type="desktop-id">org.iced_systemmonitor.Monitor.desktop</launchable>
+  <provides>
+    <binaries>
+      <binary>iced_systemmonitor</binary>
+    </binaries>
+  </provides>
+</component>

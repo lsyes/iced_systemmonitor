@@ -2,19 +2,18 @@ use std::{
     borrow::Cow, cmp::Ordering, collections::HashMap, fmt, path::Path, sync::Arc, time::Duration,
 };
 
-use cosmic::{
-    iced::{Alignment, Length},
-    widget::{
-        self, Icon,
-        table::{ItemCategory, ItemInterface},
-    },
-};
 use humansize::{BINARY, DECIMAL, format_size};
+use iced::{Alignment, Length};
 use regex::Regex;
 use sysinfo::{Pid, Process, System, Users};
 
 use super::{GpuId, GpuItem, Platform};
-use crate::{SelectedItem, fl, info::AppEntry};
+use crate::{
+    app::SelectedItem, fl,
+    icons::Icon,
+    info::AppEntry,
+    widget::table::{ItemCategory, ItemInterface},
+};
 
 fn best_name(p: &Process) -> String {
     // Name is truncated on Linux, try to fill in using cmdline or exe
@@ -127,22 +126,6 @@ impl ProcessCategory {
         ]
     }
 
-    pub fn data_align(&self) -> Alignment {
-        match self {
-            Self::Name | Self::User | Self::Priority => Alignment::Start,
-            Self::App
-            | Self::PID
-            | Self::CPU
-            | Self::Memory
-            | Self::GpuUsage(..)
-            | Self::GpuUsageTotal
-            | Self::GpuVram(..)
-            | Self::GpuVramTotal
-            | Self::DiskRead
-            | Self::DiskWrite
-            | Self::DiskTotal => Alignment::End,
-        }
-    }
 }
 
 impl fmt::Display for ProcessCategory {
@@ -180,11 +163,27 @@ impl ItemCategory for ProcessCategory {
             Self::User | Self::PID | Self::Priority => Length::Fixed(96.0),
             Self::CPU | Self::GpuUsageTotal => Length::Fixed(64.0),
             Self::GpuUsage(..) => Length::Fixed(80.0),
-            Self::Memory | Self::DiskRead | Self::DiskWrite | Self::DiskTotal => {
-                Length::Fixed(96.0)
-            }
+            Self::Memory => Length::Fixed(112.0),
+            Self::DiskRead | Self::DiskWrite | Self::DiskTotal => Length::Fixed(96.0),
             Self::GpuVramTotal => Length::Fixed(104.0),
             Self::GpuVram(..) => Length::Fixed(112.0),
+        }
+    }
+
+    fn data_align(&self) -> Alignment {
+        match self {
+            Self::Name | Self::User | Self::Priority => Alignment::Start,
+            Self::App
+            | Self::PID
+            | Self::CPU
+            | Self::Memory
+            | Self::GpuUsage(..)
+            | Self::GpuUsageTotal
+            | Self::GpuVram(..)
+            | Self::GpuVramTotal
+            | Self::DiskRead
+            | Self::DiskWrite
+            | Self::DiskTotal => Alignment::End,
         }
     }
 }
@@ -431,9 +430,9 @@ impl ItemInterface<ProcessCategory> for ProcessItem {
                     .map(|x| x.as_str())
                     .unwrap_or("application-x-executable");
                 if Path::new(icon).is_absolute() {
-                    Some(widget::icon::from_path(icon.into()).icon().size(24))
+                    Some(Icon::path(icon))
                 } else {
-                    Some(widget::icon::from_name(icon).size(24).icon())
+                    Some(Icon::name(icon))
                 }
             }
             _ => None,

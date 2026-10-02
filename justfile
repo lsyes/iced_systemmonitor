@@ -1,5 +1,5 @@
-name := 'cosmic-monitor'
-export APPID := 'com.system76.CosmicMonitor'
+name := 'iced_systemmonitor'
+export APPID := 'org.iced_systemmonitor.Monitor'
 
 rootdir := ''
 prefix := '/usr'
@@ -60,7 +60,7 @@ dev *args:
 
 # Run with debug logs
 run *args:
-    env RUST_LOG=cosmic_monitor=debug RUST_BACKTRACE=full cargo run --release {{args}}
+    env RUST_LOG=iced_systemmonitor=debug RUST_BACKTRACE=full cargo run --release {{args}}
 
 # Installs files
 install:

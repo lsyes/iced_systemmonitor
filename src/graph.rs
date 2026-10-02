@@ -1,12 +1,19 @@
-use cosmic::{
-    Renderer, Theme,
-    iced::{Color, Point, Rectangle, Size, alignment::Vertical, core::text::Alignment, mouse},
+// SPDX-License-Identifier: GPL-3.0-only
+
+//! Canvas based graphs of the collected metrics.
+
+use iced::{
+    Point, Renderer, Size, Theme,
+    advanced::text::Alignment as TextAlignment,
+    alignment::Vertical,
+    mouse,
     widget::canvas,
 };
 use std::{collections::VecDeque, time::Instant};
 
-use super::{
-    Message,
+use crate::{
+    app::Message,
+
     info::{GpuId, GraphItem},
 };
 
@@ -34,7 +41,7 @@ pub enum GraphKind<'a> {
     NetworkTotal,
 }
 
-impl<'a> GraphKind<'a> {
+impl GraphKind<'_> {
     fn label(&self, value: f32) -> String {
         match self {
             GraphKind::Cpu(ProcGraphKind::Utilization)
@@ -101,7 +108,7 @@ impl<'a> Graph<'a> {
     }
 }
 
-impl<'a> canvas::Program<Message, Theme, Renderer> for Graph<'a> {
+impl canvas::Program<Message, Theme, Renderer> for Graph<'_> {
     type State = ();
 
     fn draw(
@@ -109,19 +116,19 @@ impl<'a> canvas::Program<Message, Theme, Renderer> for Graph<'a> {
         _state: &(),
         renderer: &Renderer,
         theme: &Theme,
-        bounds: Rectangle,
+        bounds: iced::Rectangle,
         _cursor: mouse::Cursor,
     ) -> Vec<canvas::Geometry> {
-        let cosmic = theme.cosmic();
-        let accent_color = Color::from(cosmic.accent_color());
-        let mut accent_color_0_5 = accent_color.clone();
+        let palette = theme.palette();
+
+        let accent_color = palette.primary.base.color;
+        let mut accent_color_0_5 = accent_color;
         accent_color_0_5.a *= 0.5;
-        let bg_component_color = Color::from(cosmic.bg_component_color());
-        let bg_component_divider = Color::from(cosmic.bg_component_divider());
-        let on_bg_color = Color::from(cosmic.on_bg_color());
-        //TODO: design has radius_s but Canvas does not support clipping with border radius
-        //let bg_radius = cosmic.radius_s();
-        let bg_radius = cosmic.radius_0();
+        let bg_component_color = palette.background.weak.color;
+        let bg_component_divider = palette.background.strong.color;
+        let on_bg_color = palette.background.weak.text;
+        //TODO: the design has a radius, but Canvas cannot clip with a border radius
+        let bg_radius = 0.0;
 
         let (legend_w, legend_h) = if self.legend {
             (80.0, 20.0)
@@ -163,7 +170,7 @@ impl<'a> canvas::Program<Message, Theme, Renderer> for Graph<'a> {
 
         let text = |string: &str,
                     position: Point,
-                    align_x: Alignment,
+                    align_x: TextAlignment,
                     align_y: Vertical,
                     frame: &mut canvas::Frame| {
             if self.legend {
@@ -196,7 +203,7 @@ impl<'a> canvas::Program<Message, Theme, Renderer> for Graph<'a> {
         text(
             "60 secs",
             Point::new(calc_x(60.0), max_y),
-            Alignment::Left,
+            TextAlignment::Left,
             Vertical::Top,
             &mut frame,
         );
@@ -217,7 +224,7 @@ impl<'a> canvas::Program<Message, Theme, Renderer> for Graph<'a> {
             text(
                 string,
                 Point::new(x, max_y),
-                Alignment::Center,
+                TextAlignment::Center,
                 Vertical::Top,
                 &mut frame,
             );
@@ -225,7 +232,7 @@ impl<'a> canvas::Program<Message, Theme, Renderer> for Graph<'a> {
         text(
             "0",
             Point::new(calc_x(0.0), max_y),
-            Alignment::Right,
+            TextAlignment::Right,
             Vertical::Top,
             &mut frame,
         );
@@ -234,7 +241,7 @@ impl<'a> canvas::Program<Message, Theme, Renderer> for Graph<'a> {
         text(
             &self.kind.label(0.0),
             Point::new(max_x, calc_y(0.0)),
-            Alignment::Left,
+            TextAlignment::Left,
             Vertical::Bottom,
             &mut frame,
         );
@@ -249,7 +256,7 @@ impl<'a> canvas::Program<Message, Theme, Renderer> for Graph<'a> {
             text(
                 &self.kind.label(value),
                 Point::new(max_x, y),
-                Alignment::Left,
+                TextAlignment::Left,
                 Vertical::Center,
                 &mut frame,
             );
@@ -257,7 +264,7 @@ impl<'a> canvas::Program<Message, Theme, Renderer> for Graph<'a> {
         text(
             &self.kind.label(scale_y),
             Point::new(max_x, calc_y(scale_y)),
-            Alignment::Left,
+            TextAlignment::Left,
             Vertical::Top,
             &mut frame,
         );
@@ -267,12 +274,12 @@ impl<'a> canvas::Program<Message, Theme, Renderer> for Graph<'a> {
             .history
             .front()
             .map(|x| x.time)
-            .unwrap_or_else(|| Instant::now());
+            .unwrap_or_else(Instant::now);
         let end = self
             .history
             .back()
             .map(|x| x.time)
-            .unwrap_or_else(|| Instant::now());
+            .unwrap_or_else(Instant::now);
         let mut area = canvas::path::Builder::new();
         let mut line = canvas::path::Builder::new();
         area.move_to(Point::new(

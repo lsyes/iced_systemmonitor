@@ -1,25 +1,27 @@
 [package]
-name = "cosmic-monitor"
+name = "iced_systemmonitor"
 version = "1.9.0"
-authors = ["Jeremy Soller <jeremy@system76.com>"]
 edition = "2024"
 license = "GPL-3.0-only"
-rust-version = "1.95"
+description = "A system monitor built with iced"
+rust-version = "1.93"
 
 [dependencies]
 clap_lex = "0.7"
 env_logger = "0.11"
+freedesktop-icons = "0.4"
 humansize = "2"
 itertools = "0.14"
 libc = "0.2"
 log = "0.4"
 open = "5.3.2"
 nvml-wrapper = { version = "0.12", optional = true }
-paste = "1"
 regex = "1"
 serde = { version = "1", features = ["serde_derive"] }
+serde_json = "1"
 sysinfo = { git = "https://github.com/jackpot51/sysinfo.git", branch = "redox-0.39" }
 tokio = { version = "1", features = ["sync"] }
+
 # Internationalization
 i18n-embed = { version = "0.16", features = [
     "fluent-system",
@@ -35,30 +37,38 @@ rustix = { version = "1", features = ["process"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 pciid-parser = "0.8"
+wayland-backend = { version = "0.3", default-features = false, features = [
+    "client_system",
+] }
+cosmic-text = { git = "https://github.com/hecrj/cosmic-text.git", rev = "1cdc3e0fcda67e38946db57df777181e4569d7c0" }
+winit = { git = "https://github.com/iced-rs/winit.git", rev = "05b8ff17a06562f0a10bb46e6eaacbe2a95cb5ed", default-features = false, features = [
+    "rwh_06",
+    "wayland",
+] }
+wayland-client = "0.31"
+wayland-protocols = { version = "0.32", features = ["client"] }
 
-[dependencies.libcosmic]
-git = "https://github.com/pop-os/libcosmic.git"
-default-features = false
-features = ["about", "multi-window", "surface-message", "tokio", "winit"]
+[dependencies.iced]
+git = "https://github.com/iced-rs/iced"
+branch = "master"
+features = ["advanced", "canvas", "image", "svg", "tokio"]
 
 [build-dependencies]
 xdgen = "0.1"
 
 [features]
-default = ["dbus-config", "nvml", "wayland", "wgpu"]
-dbus-config = ["libcosmic/dbus-config"]
+default = ["nvml", "wayland", "wgpu"]
 nvml = ["dep:nvml-wrapper"]
-wgpu = ["libcosmic/wgpu"]
-wayland = ["libcosmic/wayland"]
+wayland = ["iced/wayland"]
+wgpu = ["iced/wgpu"]
+x11 = ["iced/x11"]
 
 [profile.release-with-debug]
 inherits = "release"
 debug = true
 
-# [patch.'https://github.com/pop-os/libcosmic']
-# libcosmic = { path = "../libcosmic" }
-# cosmic-config = { path = "../libcosmic/cosmic-config" }
-# cosmic-theme = { path = "../libcosmic/cosmic-theme" }
-# libcosmic = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
-# cosmic-config = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
-# cosmic-theme = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
+# The vendored winit exposes the `xdg_surface` of a window so that a native
+# `xdg_popup` context menu can be parented to it.
+[patch."https://github.com/iced-rs/winit.git"]
+winit = { path = "third_party/winit" }
+dpi = { path = "third_party/winit/dpi" }

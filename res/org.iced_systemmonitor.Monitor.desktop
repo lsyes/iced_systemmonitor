@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Iced System Monitor
+Comment=A system monitor built with iced
+Exec=iced_systemmonitor
+Terminal=false
+Type=Application
+StartupNotify=true
+Icon=org.iced_systemmonitor.Monitor
+Categories=System;Monitor;
+Keywords=Monitor;System;Process;CPU;Memory;Network;History;Usage;

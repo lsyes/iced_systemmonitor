@@ -1,7 +1,5 @@
-use cosmic::iced::{
-    futures::{SinkExt, Stream},
-    stream,
-};
+use iced::futures::{SinkExt, Stream};
+use iced::stream;
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
@@ -15,7 +13,7 @@ use sysinfo::{
 use tokio::sync::mpsc;
 
 use crate::{
-    Message,
+    app::Message,
     graph::{GraphKind, ProcGraphKind},
 };
 

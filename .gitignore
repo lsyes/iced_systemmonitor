@@ -1,7 +1,7 @@
 /.cargo/
 /debian/*debhelper*
-/debian/cosmic-monitor.substvars
-/debian/cosmic-monitor/
+/debian/iced-systemmonitor.substvars
+/debian/iced-systemmonitor/
 /debian/files
 /target/
 /vendor.tar

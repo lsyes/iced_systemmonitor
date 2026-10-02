@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-export DESTDIR = debian/cosmic-monitor
+export DESTDIR = debian/iced-systemmonitor
 export VENDOR ?= 1
 
 %:

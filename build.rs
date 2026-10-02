@@ -2,7 +2,7 @@ use std::{env, fs, path::PathBuf};
 use xdgen::{App, Context, FluentString};
 
 fn main() {
-    let id = "com.system76.CosmicMonitor";
+    let id = "org.iced_systemmonitor.Monitor";
     let ctx = Context::new("i18n", env::var("CARGO_PKG_NAME").unwrap()).unwrap();
     let app = App::new(FluentString("app-name"))
         .comment(FluentString("comment"))
