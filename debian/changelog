@@ -1,3 +1,9 @@
+iced-systemmonitor (2.0) noble; urgency=medium
+
+  * Rewrite source from cosmic-monitor to iced-systemmonitor.
+
+ -- Junxi Zeng <3294271542@qq.com>  Sat, 03 Oct 2026 12:00:00 +0800
+
 cosmic-monitor (1.9.0) noble; urgency=medium
 
   * Epoch 1.9.0 version update
