@@ -39,7 +39,7 @@ use crate::widget::{
 };
 
 /// The width of the menu, shared by the native and the in-application panel.
-pub const WIDTH: f32 = 190.0;
+pub const WIDTH: f32 = popup::WIDTH;
 
 /// What happened to the context menu.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -67,6 +67,8 @@ pub struct State {
     handle: Option<(usize, usize)>,
     /// The labels of the entries, top to bottom.
     items: Vec<String>,
+    /// The size of the window, used to keep the menu inside of it.
+    window_size: Option<Size>,
 }
 
 impl State {
@@ -83,6 +85,47 @@ impl State {
     /// Records the raw Wayland handles used to parent the native popup.
     pub fn set_window_handle(&mut self, handle: Option<(usize, usize)>) {
         self.handle = handle;
+    }
+
+    /// Records the size of the window, so that the menu can be flipped when
+    /// there is not enough room below the click.
+    pub fn set_window_size(&mut self, size: Size) {
+        self.window_size = Some(size);
+    }
+
+    /// The height of the menu with the current entries.
+    fn height(&self) -> f32 {
+        popup::height(self.items.len())
+    }
+
+    /// The direction the menu has to grow in to stay inside the window.
+    fn direction(&self, position: Point) -> popup::Direction {
+        let fits_below = self
+            .window_size
+            .is_none_or(|size| position.y + self.height() <= size.height);
+
+        if fits_below {
+            popup::Direction::Down
+        } else {
+            popup::Direction::Up
+        }
+    }
+
+    /// The corner of the menu, relative to the click, in the in-application
+    /// panel. Mirrors what the compositor does with the native popup.
+    fn panel_offset(&self, position: Point) -> Point {
+        let mut offset = position;
+
+        if self.direction(position) == popup::Direction::Up {
+            offset.y -= self.height();
+        }
+
+        if let Some(size) = self.window_size {
+            offset.x = offset.x.min((size.width - WIDTH).max(0.0));
+            offset.y = offset.y.max(0.0).min((size.height - self.height()).max(0.0));
+        }
+
+        offset
     }
 
     /// Whether the menu is currently visible, natively or in-application.
@@ -167,6 +210,7 @@ impl State {
                     surface as *mut std::ffi::c_void,
                     position.x.round() as i32,
                     position.y.round() as i32,
+                    self.direction(position),
                     self.items.clone(),
                     popup::render::MenuStyle::from_theme(theme),
                 )
@@ -193,10 +237,11 @@ impl State {
     /// The subscriptions the menu needs while it is open.
     pub fn subscription(&self) -> Subscription<Event> {
         let mut subscriptions = vec![
-            // A left click anywhere outside of the menu dismisses it. The
-            // native popup receives its own events, so this only fires for the
-            // application window.
-            iced::event::listen().filter_map(|event| match event {
+            // A left click anywhere dismisses the menu. `listen()` would only
+            // report the events no widget handled, which is precisely not the
+            // case here: clicking a row or a navigation button has to close
+            // the menu as well.
+            iced::event::listen_with(|event, _status, _window| match event {
                 iced::Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
                     Some(Event::Dismiss)
                 }
@@ -224,6 +269,10 @@ impl State {
         let Some(position) = self.fallback else {
             return Vec::new();
         };
+
+        // Keep the panel inside of the window, flipping it upwards when there
+        // is no room below the click.
+        let position = self.panel_offset(position);
 
         let items = self
             .items
@@ -440,5 +489,78 @@ mod tests {
 
         assert_eq!(state.update(Event::Dismiss, &Theme::Light), None);
         assert!(!state.is_open());
+    }
+
+    /// A menu with two entries, which is 76 pixels tall.
+    fn positioned() -> State {
+        let mut state = State::new();
+        state.set_items(["One".to_string(), "Two".to_string()]);
+        state.set_window_size(Size::new(800.0, 600.0));
+
+        state
+    }
+
+    #[test]
+    fn the_menu_grows_downwards_when_there_is_room_below() {
+        let state = positioned();
+
+        assert_eq!(
+            state.direction(Point::new(100.0, 100.0)),
+            popup::Direction::Down
+        );
+    }
+
+    #[test]
+    fn the_menu_grows_upwards_when_it_would_not_fit_below() {
+        let state = positioned();
+
+        assert_eq!(
+            state.direction(Point::new(100.0, 550.0)),
+            popup::Direction::Up
+        );
+    }
+
+    #[test]
+    fn the_menu_grows_downwards_without_a_known_window_size() {
+        let mut state = State::new();
+        state.set_items(["One".to_string()]);
+
+        assert_eq!(
+            state.direction(Point::new(100.0, 5000.0)),
+            popup::Direction::Down
+        );
+    }
+
+    #[test]
+    fn an_upwards_menu_ends_at_the_click() {
+        let state = positioned();
+        let offset = state.panel_offset(Point::new(100.0, 550.0));
+
+        // The bottom edge of the menu sits on the click.
+        assert_eq!(offset.y, 550.0 - state.height());
+    }
+
+    #[test]
+    fn the_panel_is_kept_inside_of_the_window() {
+        let state = positioned();
+
+        // Clicking near the right and bottom edges still shows the whole menu.
+        let offset = state.panel_offset(Point::new(790.0, 590.0));
+
+        assert!(offset.x + WIDTH <= 800.0);
+        assert!(offset.y + state.height() <= 600.0);
+        assert!(offset.x >= 0.0);
+    }
+
+    #[test]
+    fn a_tiny_window_does_not_push_the_panel_negative() {
+        let mut state = State::new();
+        state.set_items(["One".to_string(), "Two".to_string()]);
+        state.set_window_size(Size::new(100.0, 50.0));
+
+        let offset = state.panel_offset(Point::new(90.0, 40.0));
+
+        assert_eq!(offset.x, 0.0);
+        assert_eq!(offset.y, 0.0);
     }
 }

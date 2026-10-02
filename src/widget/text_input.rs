@@ -95,6 +95,12 @@ impl State {
         self.menu.set_window_handle(handle);
     }
 
+    /// Records the size of the window, so that the menu can be flipped when
+    /// there is not enough room below the click.
+    pub fn set_window_size(&mut self, size: iced::Size) {
+        self.menu.set_window_size(size);
+    }
+
     /// Whether the context menu is currently visible.
     pub fn is_menu_open(&self) -> bool {
         self.menu.is_open()

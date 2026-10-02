@@ -29,7 +29,7 @@ use wayland_protocols::xdg::shell::client::{
 };
 
 use super::{
-    PopupEvent,
+    Direction, PopupEvent,
     render::{self, MenuStyle},
 };
 
@@ -179,10 +179,11 @@ impl Popup {
         parent_surface: *mut c_void,
         x: i32,
         y: i32,
+        direction: Direction,
         labels: Vec<String>,
         style: MenuStyle,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let width = 190;
+        let width = super::WIDTH.round() as i32;
         let height = (style.padding * 2.0 + style.row_height * labels.len() as f32).round() as i32;
 
         let connection =
@@ -221,14 +222,33 @@ impl Popup {
         let positioner = wm_base.create_positioner(&qh, ());
         positioner.set_size(width, height);
         positioner.set_anchor_rect(x, y, 1, 1);
-        positioner.set_anchor(xdg_positioner::Anchor::BottomRight);
-        positioner.set_gravity(xdg_positioner::Gravity::BottomRight);
+        // The menu hangs off the click: downwards normally, upwards when it
+        // would not fit below. The compositor still flips or slides it when it
+        // would run past the edge of the screen.
+        let (anchor, gravity) = match direction {
+            Direction::Down => (
+                xdg_positioner::Anchor::TopLeft,
+                xdg_positioner::Gravity::BottomRight,
+            ),
+            Direction::Up => (
+                xdg_positioner::Anchor::BottomLeft,
+                xdg_positioner::Gravity::TopRight,
+            ),
+        };
+        positioner.set_anchor(anchor);
+        positioner.set_gravity(gravity);
         positioner.set_constraint_adjustment(
             xdg_positioner::ConstraintAdjustment::SlideX
                 | xdg_positioner::ConstraintAdjustment::SlideY
                 | xdg_positioner::ConstraintAdjustment::FlipX
                 | xdg_positioner::ConstraintAdjustment::FlipY,
         );
+
+        if positioner.version() >= 3 {
+            // Re-position the menu whenever the parent surface (or the screen
+            // layout) changes instead of leaving it stranded.
+            positioner.set_reactive();
+        }
 
         let popup = xdg_surface.get_popup(Some(&parent_xdg), &positioner, &qh, ());
         positioner.destroy();
@@ -453,13 +473,14 @@ pub unsafe fn show(
     parent_surface: *mut c_void,
     x: i32,
     y: i32,
+    direction: Direction,
     labels: Vec<String>,
     style: MenuStyle,
 ) -> Result<(), Box<dyn std::error::Error>> {
     hide();
 
     let popup =
-        unsafe { Popup::create(display, parent_surface, x, y, labels, style) }?;
+        unsafe { Popup::create(display, parent_surface, x, y, direction, labels, style) }?;
 
     *POPUP.lock().unwrap() = Some(popup);
 

@@ -39,8 +39,8 @@ impl MenuStyle {
             text: to_rgba(palette.background.base.text),
             hover_background: to_rgba(palette.primary.base.color),
             hover_text: to_rgba(palette.primary.base.text),
-            row_height: 32.0,
-            padding: 6.0,
+            row_height: super::ROW_HEIGHT,
+            padding: super::PADDING,
             text_size: 14.0,
             radius: 8.0,
         }

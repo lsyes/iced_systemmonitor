@@ -354,7 +354,12 @@ pub fn worker() -> impl Stream<Item = Message> {
                             &users,
                             processes_refresh,
                         );
-                        if let Some(app) = &item.app {
+                        if let Some(app) = &item.app
+                            // Applications are the programs the user started;
+                            // services marked `NoDisplay` stay in the process
+                            // list instead of pretending to be applications.
+                            && !app.no_display
+                        {
                             let app_item = apps
                                 .entry((app.id.clone(), item.username.clone()))
                                 .or_insert_with(|| {

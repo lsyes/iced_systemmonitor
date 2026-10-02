@@ -227,7 +227,7 @@ impl App {
             size: None,
         };
 
-        (app, capture_window_handle())
+        (app, Task::batch([capture_window_handle(), initial_size()]))
     }
 
     /// Re-sorts the process lists for the current page.
@@ -424,6 +424,8 @@ impl App {
                 self.menu_open = !self.menu_open;
             }
             Message::NavPage(nav_page) => {
+                self.context_menu.close();
+                self.search.close_menu();
                 self.nav_page = nav_page;
                 self.selected = None;
 
@@ -441,6 +443,8 @@ impl App {
                 self.update_snapshot();
             }
             Message::SeeAllProcesses(show_apps, category, direction) => {
+                self.context_menu.close();
+                self.search.close_menu();
                 self.process_sort = (category, direction);
                 self.nav_page = if show_apps {
                     NavPage::Applications
@@ -455,6 +459,8 @@ impl App {
             }
             Message::Size(size) => {
                 self.size = Some(size);
+                self.context_menu.set_window_size(size);
+                self.search.set_window_size(size);
             }
             Message::Snapshot(graph_item, apps, processes) => {
                 self.graph_snapshot = Some(graph_item);
@@ -2219,6 +2225,14 @@ fn capture_window_handle() -> Task<Message> {
         })
         .map(Message::WindowHandle)
     })
+}
+
+/// Reports the size of the window as soon as it exists, so that the context
+/// menus know how much room they have before the first resize.
+fn initial_size() -> Task<Message> {
+    iced::window::latest()
+        .and_then(iced::window::size)
+        .map(Message::Size)
 }
 
 fn search_regex(search: &str) -> Option<Regex> {

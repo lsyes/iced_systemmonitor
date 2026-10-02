@@ -1,0 +1,4 @@
+usr/bin/iced_systemmonitor
+usr/share/applications/org.iced_systemmonitor.Monitor.desktop
+usr/share/metainfo/org.iced_systemmonitor.Monitor.metainfo.xml
+usr/share/icons/hicolor/*/apps/org.iced_systemmonitor.Monitor.svg

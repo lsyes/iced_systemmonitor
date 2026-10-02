@@ -34,7 +34,10 @@ impl Icon {
     /// Resolves this icon to a file path of the given size, if it exists.
     pub fn resolve(&self, size: u16) -> Option<PathBuf> {
         match self {
-            Self::Path(path) if path.is_absolute() => Some(path.clone()),
+            Self::Path(path) if path.is_absolute() => path
+                .exists()
+                .then(|| path.clone())
+                .or_else(|| fallback(size)),
             Self::Path(path) => lookup(&path.to_string_lossy(), size),
             Self::Name(name) => lookup(name, size),
         }
@@ -44,9 +47,30 @@ impl Icon {
 static CACHE: LazyLock<Mutex<HashMap<(String, u16), Option<PathBuf>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
+/// The names tried, in order, when the requested icon is missing from the
+/// theme, so that every entry can draw something meaningful.
+const FALLBACKS: [&str; 3] = [
+    "application-x-executable",
+    "application-default-icon",
+    "system-run",
+];
+
 /// Looks up an icon in the icon theme, with a small process-wide cache so that
 /// rendering a list of icons does not hit the disk on every frame.
+///
+/// Falls back to a generic executable icon when the theme has no icon under
+/// the requested name.
 pub fn lookup(name: &str, size: u16) -> Option<PathBuf> {
+    lookup_exact(name, size).or_else(|| fallback(size))
+}
+
+/// The first generic icon the theme provides.
+fn fallback(size: u16) -> Option<PathBuf> {
+    FALLBACKS.iter().find_map(|name| lookup_exact(name, size))
+}
+
+/// Looks up one name in the icon theme, without any fallback.
+fn lookup_exact(name: &str, size: u16) -> Option<PathBuf> {
     let key = (name.to_string(), size);
 
     if let Some(hit) = CACHE.lock().unwrap().get(&key) {
